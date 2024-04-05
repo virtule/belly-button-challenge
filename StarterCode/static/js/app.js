@@ -6,37 +6,49 @@ d3.json(url).then(function(data) {
     console.log(data);
 });
 
+// Setup initial menu
 function init() {
+    // Select drop down menu
     let menu = d3.select("#selDataset");
+    //Fetch JSON
     d3.json(url).then((data) => {
+        //Set names
         let names = data.names;
+        //Loop through names and append to menu
         names.forEach((id) => {
             console.log(id);
             menu.append("option")
             .text(id)
-            .property("value",id);
+            .property("value");
         });
-        let sample_one = names[0];
-        console.log(sample_one);
-        buildMetadata(sample_one);
-        buildBarChart(sample_one);
-        buildBubbleChart(sample_one);
+        //Set first sample
+        let sampleOne = names[0];
+        console.log(sampleOne);
+        //Run sample through functions
+        buildDemograph(sampleOne);
+        buildBarChart(sampleOne);
+        buildBubbleChart(sampleOne);
     });
 };
 
-function buildMetadata(sample) {
+// Create demographic info
+function buildDemograph(sample) {
+    //Fetch JSON
     d3.json(url).then((data) => {
+        //Set metadata
         let metadata = data.metadata;
-        let value = metadata.filter(result => result.id == sample);
+        // Create filter by matching sample id
+        let value = metadata.filter((result) => result.id == sample);
         console.log(value)
+        //Set first from filtered value
         let valueData = value[0];
+        // Clear out previous
         d3.select("#sample-metadata").html("");
         Object.entries(valueData).forEach(([key,value]) => {
             console.log(key,value);
             d3.select("#sample-metadata").append("h5").text(`${key}: ${value}`);
         });
     });
-
 };
 
 // Build bar chart
@@ -47,13 +59,14 @@ function buildBarChart(sample) {
         let valueData = valueFilter[0];
         let otuIds = valueData.otu_ids;
         let otuLabels = valueData.otu_labels;
-        let samepleValues = valueData.sample_values;
+        let sampleValues = valueData.sample_values;
         // Log data to console
-        console.log(otuIds,otuLabels,samepleValues);
+        console.log(otuIds,otuLabels,sampleValues);
         // Display in reverse order
         let yticks = otuIds.slice(0,10).map(id => `OTU ${id}`).reverse();
         let labels = otuLabels.slice(0,10).reverse();
         let xticks = sampleValues.slice(0,10).reverse();
+        // Create trace data
         let trace = {
             x: xticks,
             y: yticks,
@@ -61,47 +74,50 @@ function buildBarChart(sample) {
             type: "bar",
             orientation: "h"
         };
+        // Create layout
         let layout = {
             title: "Top 10 OTUs Present"
         };
+        // Create plot
         Plotly.newPlot("bar", [trace], layout)
     });
 };
 
+// Build bubble chart
 function buildBubbleChart(sample) {
     d3.json(url).then((data) => {
-        let sampleInfo = data.samples;
-        let value = sampleInfo.filter(result => result.id == sample);
+        let samples = data.samples;
+        let value = samples.filter(result => result.id == sample);
         let valueData = value[0];
-        let otuIds = valueData.otu_ids;
-        let otuLabels = valueData.otu_labels;
-        let sampleValues = valueData.sample_values;
-        console.log(otuIds,otuLabels,sampleValues);
+        // Create trace data
         let trace1 = {
-            x: otuIds,
-            y: sampleValues,
-            text: otuLabels,
+            x: valueData.otu_ids,
+            y: valueData.sample_values,
+            text: valueData.otu_labels,
             mode: "markers",
             marker: {
-                size: sampleValues,
-                color: otuIds,
+                size: valueData.sample_values,
+                color: valueData.otu_ids,
             }
         };
+        // Create layout
         let layout = {
             title: "Bacteria Per Sample",
-            hovermode: "closest",
             xaxis: {title: "OTU ID"},
         };
+        // Create plot
         Plotly.newPlot("bubble", [trace1], layout)
     });
 };
 
-function optionChanged(value) { 
-    console.log(value); 
-    buildMetadata(value);
-    buildBarChart(value);
-    buildBubbleChart(value);
-    buildGaugeChart(value);
+// Create handler for changing targets
+function optionChanged(ID){
+    buildDemograph(ID);
+    buildBarChart(ID);
+    buildBubbleChart(ID);
+
 };
 
+
+// Call function
 init();
